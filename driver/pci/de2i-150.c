@@ -125,7 +125,7 @@ static int __init my_init(void)
 	printk("my_driver: device number %d was registered!\n", MAJOR(my_device_nbr));
 
 	/* 2. create class : appears at /sys/class */
-	if ((my_class = class_create(THIS_MODULE, DRIVER_CLASS)) == NULL) {
+	if ((my_class = class_create(DRIVER_CLASS)) == NULL) {
 		printk("my_driver: device class count not be created!\n");
 		goto ClassError;
 	}
@@ -233,27 +233,27 @@ static long int my_ioctl(struct file*, unsigned int cmd, unsigned long arg)
 {
 	switch(cmd){
 	case RD_SWITCHES:
-		read_pointer = bar0_mmio + 0xC080; //TODO: update offset
+		read_pointer = bar0_mmio + 0xC060; //TODO: update offset
 		rd_name_idx = IDX_SWITCH;
 		break;
 	case RD_PBUTTONS:
-		read_pointer = bar0_mmio + 0xC0A0; //TODO: update offset
+		read_pointer = bar0_mmio + 0xC080; //TODO: update offset
 		rd_name_idx = IDX_PBUTTONS;
 		break;
 	case WR_L_DISPLAY:
-		write_pointer = bar0_mmio + 0xC020; //TODO: update offset
+		write_pointer = bar0_mmio + 0xC000; //TODO: update offset
 		wr_name_idx = IDX_DISPLAYL;
 		break;
 	case WR_R_DISPLAY:
-		write_pointer = bar0_mmio + 0xC000; //TODO: update offset
+		write_pointer = bar0_mmio + 0xC020; //TODO: update offset
 		wr_name_idx = IDX_DISPLAYR;
 		break;
 	case WR_RED_LEDS:
-		write_pointer = bar0_mmio + 0xC040; //TODO: update offset
+		write_pointer = bar0_mmio + 0xC0a0; //TODO: update offset
 		wr_name_idx = IDX_DISPLAYR;
 		break;
 	case WR_GREEN_LEDS:
-		write_pointer = bar0_mmio + 0xC060; //TODO: update offset
+		write_pointer = bar0_mmio + 0xC0c0; //TODO: update offset
 		wr_name_idx = IDX_DISPLAYR;
 		break;
 	default:
