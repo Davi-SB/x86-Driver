@@ -1,6 +1,18 @@
+#!/usr/bin/python3
+
+import os
+import sys
 import pygame
 import random
-import sys
+from fcntl import ioctl
+
+# ioctl commands defined at the pci driver
+RD_SWITCHES   = 24929
+RD_PBUTTONS   = 24930
+WR_L_DISPLAY  = 24931
+WR_R_DISPLAY  = 24932
+WR_RED_LEDS   = 24933
+WR_GREEN_LEDS = 24934
 
 # Inicialização do pygame
 pygame.init()
@@ -37,26 +49,21 @@ def new_food(snake_body):
         if [x, y] not in snake_body:
             return [x, y]
 
-def gameLoop():
+def gameLoop(fd):
     game_over = False
     game_close = False
-
-    # Posição inicial da cobra (centro da tela)
     x = WIDTH // 2
     y = HEIGHT // 2
     x_change = 0
     y_change = 0
-
     snake_body = []
     snake_length = 1
-
     food = new_food(snake_body)
 
     while not game_over:
-        # Tela de fim de jogo
         while game_close:
             screen.fill(BLACK)
-            message("Você perdeu! Pressione C para jogar ou Q para sair", RED, [0,HEIGHT/2])
+            message("Você perdeu! Pressione C para jogar ou Q para sair", RED, [0, HEIGHT / 2])
             pygame.display.update()
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
@@ -64,45 +71,41 @@ def gameLoop():
                         game_over = True
                         game_close = False
                     if event.key == pygame.K_c:
-                        gameLoop()
+                        gameLoop(fd)
                 if event.type == pygame.QUIT:
                     game_over = True
                     game_close = False
 
-        # Eventos de movimento
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                game_over = True
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    x_change = -BLOCK_SIZE
-                    y_change = 0
-                elif event.key == pygame.K_RIGHT:
-                    x_change = BLOCK_SIZE
-                    y_change = 0
-                elif event.key == pygame.K_UP:
-                    y_change = -BLOCK_SIZE
-                    x_change = 0
-                elif event.key == pygame.K_DOWN:
-                    y_change = BLOCK_SIZE
-                    x_change = 0
+        # Leitura dos botões
+        ioctl(fd, RD_PBUTTONS)
+        buttons = os.read(fd, 4)
+        buttons = int.from_bytes(buttons, 'little')
 
-        # Verifica colisão com as bordas
+        if (not buttons) & 0x1:  # Botão para esquerda
+            x_change = -BLOCK_SIZE
+            y_change = 0
+        elif (not buttons) & 0x02:  # Botão para direita
+            x_change = BLOCK_SIZE
+            y_change = 0
+        elif (not buttons) & 0x04:  # Botão para cima
+            y_change = -BLOCK_SIZE
+            x_change = 0
+        elif (not buttons) & 0x08:  # Botão para baixo
+            y_change = BLOCK_SIZE
+            x_change = 0
+
         if x >= WIDTH or x < 0 or y >= HEIGHT or y < 0:
             game_close = True
-
         x += x_change
         y += y_change
-
         screen.fill(BLACK)
         pygame.draw.rect(screen, RED, [food[0], food[1], BLOCK_SIZE, BLOCK_SIZE])
-        
+
         snake_head = [x, y]
         snake_body.append(snake_head)
         if len(snake_body) > snake_length:
             del snake_body[0]
 
-        # Verifica colisão com o próprio corpo
         for block in snake_body[:-1]:
             if block == snake_head:
                 game_close = True
@@ -110,16 +113,24 @@ def gameLoop():
         draw_snake(snake_body)
         pygame.display.update()
 
-        # Verifica se a cobra comeu a comida
         if x == food[0] and y == food[1]:
             food = new_food(snake_body)
             snake_length += 1
-            print(snake_length-1)
-                  
 
-        clock.tick(7)  # Controle da velocidade
+        clock.tick(7)
 
     pygame.quit()
     sys.exit()
 
-gameLoop()
+def main():
+    if len(sys.argv) < 2:
+        print("Error: expected more command line arguments")
+        print("Syntax: %s </dev/device_file>" % sys.argv[0])
+        exit(1)
+
+    fd = os.open(sys.argv[1], os.O_RDWR)
+    gameLoop(fd)
+    os.close(fd)
+
+if __name__ == '__main__':
+    main()
