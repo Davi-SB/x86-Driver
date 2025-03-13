@@ -56,7 +56,7 @@ def gameLoop():
         # Tela de fim de jogo
         while game_close:
             screen.fill(BLACK)
-            message("Você perdeu! Pressione C para jogar ou Q para sair", RED, [WIDTH/6, HEIGHT/3])
+            message("Você perdeu! Pressione C para jogar ou Q para sair", RED, [0,HEIGHT/2])
             pygame.display.update()
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
@@ -114,8 +114,10 @@ def gameLoop():
         if x == food[0] and y == food[1]:
             food = new_food(snake_body)
             snake_length += 1
+            print(snake_length-1)
+                  
 
-        clock.tick(10)  # Controle da velocidade
+        clock.tick(7)  # Controle da velocidade
 
     pygame.quit()
     sys.exit()
