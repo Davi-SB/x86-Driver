@@ -65,32 +65,41 @@ def gameLoop(fd):
             screen.fill(BLACK)
             message("Você perdeu! Pressione C para jogar ou Q para sair", RED, [0, HEIGHT / 2])
             pygame.display.update()
+            ioctl(fd, RD_SWITCHES)
+            switches = os.read(fd, 1)
+            switches = int.from_bytes(switches, 'little')
+            
+            #if event.type == pygame.KEYDOWN:
+            # sair
+            print(switches)
+            if switches & 0x1:
+                game_over = True
+                game_close = False
+            if switches & 0x2:
+                gameLoop(fd)
+
             for event in pygame.event.get():
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_q:
-                        game_over = True
-                        game_close = False
-                    if event.key == pygame.K_c:
-                        gameLoop(fd)
                 if event.type == pygame.QUIT:
                     game_over = True
                     game_close = False
 
         # Leitura dos botões
         ioctl(fd, RD_PBUTTONS)
-        buttons = os.read(fd, 4)
+        buttons = os.read(fd, 1)
         buttons = int.from_bytes(buttons, 'little')
-
-        if (not buttons) & 0x1:  # Botão para esquerda
+		
+        buttons = (~buttons)
+        print(buttons)
+        if ( buttons) & 0x2:  # Botão para esquerda
             x_change = -BLOCK_SIZE
             y_change = 0
-        elif (not buttons) & 0x02:  # Botão para direita
+        elif ( buttons) & 0x01:  # Botão para direita
             x_change = BLOCK_SIZE
             y_change = 0
-        elif (not buttons) & 0x04:  # Botão para cima
+        elif ( buttons) & 0x08:  # Botão para cima
             y_change = -BLOCK_SIZE
             x_change = 0
-        elif (not buttons) & 0x08:  # Botão para baixo
+        elif ( buttons) & 0x04:  # Botão para baixo
             y_change = BLOCK_SIZE
             x_change = 0
 
@@ -117,7 +126,7 @@ def gameLoop(fd):
             food = new_food(snake_body)
             snake_length += 1
 
-        clock.tick(7)
+        clock.tick(5)
 
     pygame.quit()
     sys.exit()
