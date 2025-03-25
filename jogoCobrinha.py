@@ -8,19 +8,19 @@ from fcntl import ioctl
 
 # Mapeamento dos dígitos para os valores correspondentes no display de 7 segmentos
 SEGMENT_MAP = {
-    0: 0b00111111,
-    1: 0b00000110,
-    2: 0b01011011,
-    3: 0b01001111,
-    4: 0b01100110,
-    5: 0b01101101,
-    6: 0b01111101,
-    7: 0b00000111,
-    8: 0b01111111,
-    9: 0b01101111
+    0: 0b11000000,
+    1: 0b11111001,
+    2: 0b10100100,
+    3: 0b10110000,
+    4: 0b10011001,
+    5: 0b10010010,
+    6: 0b10000010,
+    7: 0b11111000,
+    8: 0b10000000,
+    9: 0b10010000
 }
 
-def encode_number(num: int):
+def encode_number(num: int, fd):
     high, low = 0, 0
 
     for i in range(8):
@@ -29,13 +29,18 @@ def encode_number(num: int):
         
         segment_value = SEGMENT_MAP[digit]  # Obtém o valor para 7 segmentos
 
-        if i < 4:
-            low |= (segment_value << (i * 8))  # Armazena nos 32 bits baixos
+        if i == 0:
+        	low |= (segment_value << 0)
+        elif i < 4:
+        	low |= (segment_value << (i * 8))
         else:
-            high |= (segment_value << ((i - 4) * 8))  # Armazena nos 32 bits altos
-
-    return high, low
-
+        	high |= (segment_value << ((i - 4) * 8)) 
+        	
+        ioctl(fd, WR_L_DISPLAY)
+        retval = os.write(fd, low.to_bytes(4, 'little'))
+        ioctl(fd, WR_R_DISPLAY)
+        retval = os.write(fd, high.to_bytes(4, 'little'))
+        
 # ioctl commands defined at the pci driver
 RD_SWITCHES   = 24929
 RD_PBUTTONS   = 24930
@@ -89,6 +94,7 @@ def gameLoop(fd):
     snake_body = []
     snake_length = 1
     food = new_food(snake_body)
+    encode_number(0, fd)
 
     while not game_over:
         while game_close:
@@ -156,12 +162,7 @@ def gameLoop(fd):
             food = new_food(snake_body)
             snake_length += 1
             # Testando a função
-            high, low = encode_number(snake_length-1)
-            ioctl(fd, WR_R_DISPLAY)
-            retval = os.write(fd, low.to_bytes(4, 'little'))
-            ioctl(fd, WR_L_DISPLAY)
-            retval = os.write(fd, high.to_bytes(4, 'little'))
-            print(f"High: {high:#010X}, Low: {low:#010X}")
+            encode_number(snake_length-1, fd)
 
         clock.tick(5)
 
