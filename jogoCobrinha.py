@@ -36,11 +36,6 @@ def encode_number(num: int):
 
     return high, low
 
-# Testando a função
-number = 12345678
-high, low = encode_number(number)
-print(f"High: {high:#010X}, Low: {low:#010X}")
-
 # ioctl commands defined at the pci driver
 RD_SWITCHES   = 24929
 RD_PBUTTONS   = 24930
@@ -160,6 +155,13 @@ def gameLoop(fd):
         if x == food[0] and y == food[1]:
             food = new_food(snake_body)
             snake_length += 1
+            # Testando a função
+            high, low = encode_number(snake_length-1)
+            ioctl(fd, WR_R_DISPLAY)
+            retval = os.write(fd, low.to_bytes(4, 'little'))
+            ioctl(fd, WR_L_DISPLAY)
+            retval = os.write(fd, high.to_bytes(4, 'little'))
+            print(f"High: {high:#010X}, Low: {low:#010X}")
 
         clock.tick(5)
 
